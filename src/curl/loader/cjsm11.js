@@ -42,6 +42,21 @@ define(/*=='curl/loader/cjsm11',==*/ ['../plugin/_fetchText', 'curl/_privileged'
 	extractCjsDeps = priv['core'].extractCjsDeps;
 	checkToAddJsExt = priv['core'].checkToAddJsExt;
 
+	if ((!extractCjsDeps) || (!checkToAddJsExt)) {
+		(function detectBySignature() {
+			var core = priv.core,
+				cjsDepsNospc = /\.toSource\(\S+\.replace\(\w+,["']+\)\.replace\(\w+,/,
+				checkAddJsNospc = /^function\(\w+,\w+\)\{return\S+\.test\(\S+\.js/;
+			Object.keys(core).forEach(function (key) {
+				var val = core[key], nospc;
+				if ('function' !== typeof val) { return; }
+				nospc = String(val).replace(/\s/g, '');
+				if (nospc.match(cjsDepsNospc)) { extractCjsDeps = val; }
+				if (nospc.match(checkAddJsNospc)) { checkToAddJsExt = val; }
+			});
+		}());
+	}
+
 	function wrapSource (source, resourceId, fullUrl) {
 		var sourceUrl = fullUrl ? '/*\n////@ sourceURL=' + fullUrl.replace(/\s/g, '%20') + '.js\n*/' : '';
 		return "define('" + resourceId + "'," +
